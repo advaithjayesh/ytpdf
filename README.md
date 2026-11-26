@@ -29,6 +29,7 @@ git clone https://github.com/advaithjayesh/ytpdf
 cd ytpdf
 chmod +x ytpdf
 mkdir -p ~/.local/bin && cp ytpdf ~/.local/bin/
+cd .. && rm -rf ytpdf
 ```
 *(Make sure `~/.local/bin` is in your `$PATH`.)*
 
