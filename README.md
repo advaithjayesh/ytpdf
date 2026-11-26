@@ -25,7 +25,7 @@ pip install --break-system-packages -U yt-dlp img2pdf
 
 ## Installation
 ```bash
-git clone https://github.com
+git clone https://github.com/advaithjayesh/ytpdf
 cd ytpdf
 chmod +x ytpdf
 mkdir -p ~/.local/bin && cp ytpdf ~/.local/bin/
@@ -39,4 +39,6 @@ ytpdf
 ```
 
 ## License
-MIT License
+Copyright (C) 2026 advaithjayesh
+
+Licensed under the **GNU General Public License v3.0 (GPL-3.0)** — see the [LICENSE](LICENSE) file for details.
