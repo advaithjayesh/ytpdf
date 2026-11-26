@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -e
+
+WORK_DIR="/tmp/yt_stamps_$$"
+trap 'rm -rf "$WORK_DIR"' EXIT  # Deletes all byproducts automatically on exit
+
+read -rp "Enter YouTube URL: " URL
+if [ -z "$URL" ]; then
+    echo "Error: URL cannot be empty."
+    exit 1
+fi
+
+echo "Enter timestamps in SS, MM:SS, or HH:MM:SS format (e.g., 45 12:30 01:45:10)."
+echo "Separate by spaces/commas, or enter one per line. Press ENTER on a blank line when done:"
+
+TIMESTAMPS=()
+while true; do
+    read -rp "> " LINE
+    [ -z "$LINE" ] && break
+    CLEAN_LINE="${LINE//,/ }"
+    for ITEM in $CLEAN_LINE; do
+        # Validate formats: SS, M:SS, MM:SS, H:MM:SS, or HH:MM:SS (even 10+ hours like 12:30:00)
+        if [[ "$ITEM" =~ ^([0-9]+:)?([0-5]?[0-9]:)?[0-5]?[0-9]$ ]] || [[ "$ITEM" =~ ^[0-9]+$ ]]; then
+            TIMESTAMPS+=("$ITEM")
+        else
+            echo "  [!] Invalid timestamp skipped: '$ITEM' (use SS, MM:SS, or HH:MM:SS)"
+        fi
+    done
+done
+
+if [ ${#TIMESTAMPS[@]} -eq 0 ]; then
+    echo "Error: No valid timestamps provided."
+    exit 1
+fi
+
+read -rp "Enter desired PDF filename (without .pdf): " OUT_NAME
+OUT_NAME="${OUT_NAME:-lecture_notes}"
+
+mkdir -p "$WORK_DIR"
+
+echo "[1/3] Fetching direct video stream..."
+STREAM_URL=$(yt-dlp -f "bestvideo[height<=1080][ext=mp4]/best[height<=1080]" -g "$URL" | head -n 1)
+
+echo "[2/3] Capturing ${#TIMESTAMPS[@]} screenshots..."
+COUNT=1
+for TS in "${TIMESTAMPS[@]}"; do
+    PADDED=$(printf "%04d" "$COUNT")
+    echo "  -> [$COUNT/${#TIMESTAMPS[@]}] Capturing frame at $TS..."
+    ffmpeg -ss "$TS" -i "$STREAM_URL" -frames:v 1 -q:v 2 "$WORK_DIR/shot_${PADDED}.jpg" -loglevel error
+    ((COUNT++))
+done
+
+echo "[3/3] Compiling ${#TIMESTAMPS[@]} screenshots into ${OUT_NAME}.pdf..."
+img2pdf "$WORK_DIR"/shot_*.jpg -o "${OUT_NAME}.pdf"
+
+echo "Done! Saved to $(pwd)/${OUT_NAME}.pdf (All temporary files deleted)."
